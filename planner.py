@@ -4,6 +4,7 @@ import csv
 import argparse
 from pathlib import Path
 from decimal import Decimal
+from math import radians, sin, cos, sqrt, atan2
 
 class Planner:
     def __init__(self, city, state):
@@ -33,6 +34,18 @@ class Planner:
                                      'STATE_NAME':row[2],'COUNTY':row[4],
                                      'LATITUDE':row[5],'LONGITUDE':row[6]}}
     
+    def calculate_distance(self, res_long, city_long, res_lat, city_lat, range):
+        earth_radius = 3958.8
+        city_lat, city_long, res_lat, res_long = map(radians, [city_lat, city_long, res_lat, res_long])
+        lat_distance = res_lat - city_lat
+        long_distance = res_long - city_long
+        haversine = sin(lat_distance/2)**2+cos(city_lat)*cos(res_lat)*sin(long_distance/2)**2
+        cen_angle = 2*atan2(sqrt(haversine), sqrt(1-haversine))
+        distance = earth_radius*cen_angle
+        if Decimal(distance) <= Decimal(range):
+            return True
+        return False
+    
     def get_resorts(self, city_info, range):
         resort_list = []
         city_long = Decimal(city_info[self.city]['LONGITUDE'])
@@ -43,14 +56,17 @@ class Planner:
             for row in reader:
                 res_long = Decimal(row[3])
                 res_lat = Decimal(row[2])
-                if abs(abs(res_long)-abs(city_long)) <= Decimal(range) and abs(abs(res_lat)-abs(city_lat)) <= Decimal(range):
+                if self.calculate_distance(res_long, city_long, res_lat, city_lat, range):
                     resort_list.append({'RESORT_NAME':row[0],'PARTNER':bool(row[1]),'LATITUDE':row[2],':LONGITUDE':row[3]})
         return resort_list
 
     def get_mountains(self, range):
+        resorts = []
         city_info = self.get_city_info()
         resorts_in_range = self.get_resorts(city_info, range)
-        print(resorts_in_range)
+        for resort in resorts_in_range:
+            resorts.append(resort['RESORT_NAME'])
+        return resorts
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
