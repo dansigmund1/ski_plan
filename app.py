@@ -13,6 +13,8 @@ def home():
         if city and state:
             planner = Planner(city, state)
             resorts = planner.get_mountains(range)
+            if not resorts:
+                resorts = f"No resorts found in {range} miles from {city}, {state}"
         else:
             resorts = "Must enter a city and a state"
     return render_template("home.html", resorts=resorts)
